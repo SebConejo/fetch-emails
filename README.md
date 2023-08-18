@@ -2,6 +2,9 @@
 
 This tool allow to fetch emails from a Github profile list using Github API.
 
+## prerequisites
+- [Node.js 18](https://nodejs.org/fr)
+
 ## How to use
 
 1. Clone or download the repository
