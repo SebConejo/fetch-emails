@@ -1,47 +1,39 @@
-const fs = require('fs/promises') // ES6-style file system module
+const axios = require('axios');
+const fs = require('fs');
 
-const githubToken = 'YOUR_GITHUB_TOKEN'
-const usernames = [`user1`, `user2`, `user3`]
+const token = 'YOUR_GITHUB_TOKEN'; // Remplacez par votre jeton d'accès personnel
+const usernames = [
+  'username1','username2'
+]; // Remplacez par la liste des pseudos
 
-const getUserEmail = async (username) => {
-  const response = await fetch(`https://api.github.com/users/${username}`, {
-    headers: {
-      Authorization: `Bearer ${githubToken}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
-  })
+async function getEmailsFromUsernames(usernames) {
+    const usersWithEmails = {};
 
-  if (response.ok) {
-    const userData = await response.json()
-    return userData.email
-  } else if (response.status === 404) {
-    console.log(`User '${username}' not found on GitHub.`)
-  } else {
-    console.log(
-      `Error retrieving user data for '${username}'. Status code: ${response.status}`
-    )
-  }
+    for (const username of usernames) {
+        try {
+            const response = await axios.get(`https://api.github.com/users/${username}`, {
+                headers: {
+                    'Authorization': `token ${token}`
+                }
+            });
 
-  return null
-}
-
-const main = async () => {
-  const emailData = {}
-
-  for (const username of usernames) {
-    const email = await getUserEmail(username)
-    if (email) {
-      emailData[username] = email
+            // L'email peut être null si l'utilisateur n'a pas rendu son email public
+            usersWithEmails[username] = response.data.email || 'Email non public';
+        } catch (error) {
+            console.error(`Erreur lors de la récupération des données pour ${username}: `, error);
+            usersWithEmails[username] = 'Erreur lors de la récupération de l\'email';
+        }
     }
-  }
-  const jsonData = JSON.stringify(emailData, null, 2)
 
-  try {
-    await fs.writeFile('github_emails.json', jsonData)
-    console.log('Email data saved to github_emails.json')
-  } catch (error) {
-    console.error('Error writing JSON file:', error)
-  }
+    return usersWithEmails;
 }
 
-main()
+getEmailsFromUsernames(usernames).then(usersWithEmails => {
+    fs.writeFile('users_emails.json', JSON.stringify(usersWithEmails, null, 2), err => {
+        if (err) {
+            console.error('Erreur lors de l\'écriture du fichier JSON', err);
+        } else {
+            console.log('Fichier users_emails.json créé avec succès');
+        }
+    });
+});
